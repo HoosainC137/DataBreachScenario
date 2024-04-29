@@ -1,0 +1,136 @@
+# Section 1: Create sample log data and export it to a CSV file
+# Define the data
+$data = @"
+TimeGenerated,User,Action,Target,IPAddress
+2023-08-30 10:15:00,DoctorSmith,Login,PatientRecordsDB,192.168.1.101
+2023-08-30 10:30:12,NurseJohnson,View,LabResults,192.168.1.203
+2023-08-30 11:05:28,AdminUser,Update,MedicationSchedule,192.168.1.55
+2023-08-30 11:20:05,DoctorWhite,Login,PatientRecordsDB,192.168.1.128
+2023-08-30 12:45:18,PatientBrown,View,PrescriptionHistory,192.168.1.76
+2023-08-30 13:30:40,DoctorSmith,Update,LabReports,192.168.1.101
+2023-08-30 14:15:22,AdminUser,Login,AdminPanel,192.168.1.55
+2023-08-30 14:45:16,NurseJohnson,View,PatientInfo,192.168.1.203
+"@
+
+# Convert the data to a CSV file
+$data | ConvertFrom-Csv | Export-Csv -Path "C:\Users\Tameez\Desktop\Campus\2nd Semester\CSP632\FA2\Medilogs.csv" -NoTypeInformation
+****************************************************************************************
+
+# Section 2: Check for SQL injection attempts and suspicious outbound connections
+# Define the CSV file path
+$csvFilePath = "C:\Users\Tameez\Desktop\Campus\2nd Semester\CSP632\FA2\Medilogs.csv"
+
+# Define the output file for suspicious activities
+$outputFilePath = "C:\Users\Tameez\Documents\CSV output.txt"
+
+# Define keywords for SQL injection and outbound connections
+$keywords = @("SELECT * FROM", "UNION ALL SELECT", "INSERT INTO", "UPDATE", "DELETE FROM", "OUTBOUND_CONNECTION")
+
+# Initialize an array to store suspicious activities
+$suspiciousActivities = @()
+
+# Read the CSV file
+try {
+    $csvData = Import-Csv -Path $csvFilePath
+} catch {
+    Write-Host "Error reading CSV file: $_"
+    exit
+}
+
+# Iterate through each log entry
+foreach ($entry in $csvData) {
+    # Check for SQL injection attempts
+    foreach ($keyword in $keywords) {
+        if ($entry.Action -eq "Login" -and $entry.Target -eq "PatientRecordsDB" -and $entry.User -notlike "Admin*") {
+            # Check if the login attempt contains SQL injection keywords
+            if ($entry.Details -like "*$keyword*") {
+                $suspiciousActivities += [PSCustomObject]@{
+                    Timestamp = $entry.TimeGenerated
+                    User = $entry.User
+                    Type = "SQL Injection Attempt"
+                    Details = $entry.Details
+                }
+            }
+        }
+    }
+    
+    # Check for suspicious outbound connections 
+    if ($entry.IPAddress -ne "192.168.1.55" -and $entry.Target -ne "AdminPanel") {
+        # Check if the log entry indicates an outbound connection
+        if ($entry.Details -like "*OUTBOUND_CONNECTION*") {
+            $suspiciousActivities += [PSCustomObject]@{
+                Timestamp = $entry.TimeGenerated
+                User = $entry.User
+                Type = "Suspicious Outbound Connection"
+                Details = $entry.Details
+            }
+        }
+    }
+}
+
+# Export suspicious activities to a .txt file
+$suspiciousActivities | Export-Csv -Path $outputFilePath -NoTypeInformation
+
+Write-Host "Suspicious activities written to $outputFilePath"
+*************************************************************************************
+
+# Section 3: Filter and save unusual outbound connections to a text file
+try {
+    # Read the CSV file containing log data
+    $logData = Import-Csv -Path "C:\Users\Tameez\Desktop\Campus\2nd Semester\CSP632\FA2\Medilogs.csv"
+
+    # Define the normal destination and IP address
+    $normalDestination = "AdminPanel"
+    $normalIPAddress = "192.168.1.55"
+
+    # Filter for unusual outbound connections
+    $unusualOutboundConnections = $logData | Where-Object {
+        $_.Target -ne $normalDestination -and $_.IPAddress -ne $normalIPAddress -and $_.Details -like "*OUTBOUND_CONNECTION*"
+    }
+
+    # Specify the path for the output text file
+    $outputFilePath = "C:\Users\Tameez\Documents\OutboundConnections.txt"
+
+    # Output the unusual outbound connections to a text file
+    $unusualOutboundConnections | Format-Table -AutoSize | Out-File -FilePath $outputFilePath
+
+    # Display a message indicating where the file was saved
+    Write-Host "Unusual outbound connections saved to $outputFilePath"
+}
+catch {
+    # Handle any errors that occur during script execution
+    Write-Host "An error occurred: $_"
+    # You can add additional error handling code here if needed
+}
+
+
+
+***********************************************************NB
+
+# Define the path to your CSV file
+$csvFilePath = "C:\Users\Tameez\Desktop\Campus\2nd Semester\CSP632\FA2\Medilogs.csv"
+
+# Read the CSV file
+$data = Import-Csv -Path $csvFilePath
+
+# Iterate through each row in the CSV
+foreach ($row in $data) {
+    $timeGenerated = $row.TimeGenerated
+    $user = $row.User
+    $action = $row.Action
+    $target = $row.Target
+    $ipAddress = $row.IPAddress
+    $details = $row.Details
+
+    # Check for suspicious outbound connections
+    if ($action -eq "Login" -and $details -like "*Outbound Connection*") {
+        Write-Host "Suspicious Outbound Connection detected:"
+        Write-Host "Time Generated: $timeGenerated"
+        Write-Host "User: $user"
+        Write-Host "Target: $target"
+        Write-Host "IP Address: $ipAddress"
+        Write-Host "Details: $details"
+        Write-Host
+    }
+}
+
